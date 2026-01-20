@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Dashboard - CropSmile</title>
+
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Segoe+UI:300,400,500,700&display=swap" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+  <script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.development.js"></script>
+  <script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js"></script>
+  <script crossorigin src="https://cdn.jsdelivr.net/npm/@mui/material@5.15.0/umd/material-ui.development.js"></script>
+  <script crossorigin src="https://cdn.jsdelivr.net/npm/prop-types@15.8.1/prop-types.min.js"></script>
+  <script crossorigin src="https://cdn.jsdelivr.net/npm/recharts@2.10.3/umd/Recharts.js"></script>
+
+  <script crossorigin src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.23.6/babel.min.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      background-color: #f4f9f4;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    #root {
+      height: 100vh;
+    }
+
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #1b3a2b;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #e0e0e0;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="root" style="display: flex; align-items: center; justify-content: center; height: 100vh;">
+    Loading Dashboard...
+  </div>
+
+  <script type="text/babel">
+    const {
+      createTheme, ThemeProvider, CssBaseline,
+      Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText,
+      Typography, Avatar, Grid, Paper, Card, CardContent, Button, Divider, Chip,
+      IconButton, Collapse, Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+      LinearProgress, AppBar, Toolbar, Stepper, Step, StepLabel, TextField, InputAdornment,
+      Dialog, DialogTitle, DialogContent, DialogActions, Slide, Checkbox, FormControlLabel,
+      Radio, RadioGroup, MenuItem, Select, FormControl, FormLabel, Fade, CardActionArea
+    } = MaterialUI;
+
+    const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = Recharts;
+
+    const Transition = React.forwardRef(function Transition(props, ref) {
+      return <Slide direction="up" ref={ref} {...props} />;
+    });
+
+    const Icon = ({ name, color, style }) => (
+      <span className="material-icons" style={{ color: color || 'inherit', ...style }}>{name}</span>
+    );
+
+    const theme = createTheme({
+      palette: {
+        primary: { main: '#1b3a2b' },
+        secondary: { main: '#4caf50' },
+        background: { default: '#f4f9f4', paper: '#ffffff' },
+      },
+      typography: {
+        fontFamily: '"Segoe UI", sans-serif',
+        h5: { fontWeight: 600 },
+      },
+      components: {
+        MuiCard: { styleOverrides: { root: { borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' } } },
+        MuiButton: { styleOverrides: { root: { textTransform: 'none', fontWeight: 600 } } },
+        MuiDialog: { styleOverrides: { paper: { borderRadius: '16px' } } },
+        MuiAppBar: { styleOverrides: { root: { zIndex: 1201 } } }
+      },
+    });
+
+    // --- EXPANDED DATA SOURCE ---
+    const ALL_GRANTS_DATA = [
+      // --- TECH GRANTS ---
+      { id: 1, title: 'AI Innovation Fund', amount: '₹5,00,000', deadline: 'Jan 30, 2026', tags: ['Tech', 'AI'], location: 'Bangalore', gender: 'All' },
+      { id: 2, title: 'Women in Coding Scholarship', amount: '₹3,50,000', deadline: 'Mar 01, 2026', tags: ['Tech', 'Women', 'Diversity'], location: 'Remote', gender: 'Female' },
+      { id: 7, title: 'Female Tech Leader Award', amount: '₹1,50,000', deadline: 'Mar 08, 2026', tags: ['Tech', 'Women'], location: 'Mumbai', gender: 'Female' },
+
+      // --- RESEARCH GRANTS ---
+      { id: 9, title: 'Bio-Medical Research Grant', amount: '₹8,00,000', deadline: 'Jul 01, 2026', tags: ['Research', 'Health'], location: 'Kerala', gender: 'All' },
+      { id: 10, title: 'Sustainable Energy Study', amount: '₹4,50,000', deadline: 'Sep 15, 2026', tags: ['Research', 'Govt'], location: 'Gujarat', gender: 'All' },
+
+      { id: 15, title: 'Women in Science Grant', amount: '₹5,00,000', deadline: 'May 30, 2026', tags: ['Research', 'Women'], location: 'Kolkata', gender: 'Female' },
+
+      // --- GOVT & GENERAL ---
+      { id: 17, title: 'Rural Entrepreneur Scheme', amount: '₹2,00,000', deadline: 'Mar 15, 2026', tags: ['Govt', 'Social'], location: 'Bihar', gender: 'All' },
+      { id: 18, title: 'Tamil Nadu Innovation Voucher', amount: '₹1,00,000', deadline: 'Jun 30, 2026', tags: ['Govt', 'State'], location: 'Chennai', gender: 'All' },
+    ];
+
+    // --- DETAIL PAGE COMPONENTS ---
+
+    const ApplicationDetailView = ({ item, onBack }) => {
+      if (!item) return null;
+      const steps = ['Submitted', 'Under Review', 'Interview', 'Final Decision'];
+      const activeStep = item.status === 'Approved' ? 4 : item.status === 'Interview' ? 2 : 1;
+
+      return (
+        <Box>
+          <Button startIcon={<Icon name="arrow_back" />} onClick={onBack} sx={{ mt: 3 }}>Back to List</Button>
+          <Paper sx={{ p: 4, mb: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 3 }}>
+              <Box>
+                <Chip label={item.type} size="small" sx={{ mb: 1, bgcolor: '#e8f5e9', color: '#1b3a2b' }} />
+                <Typography variant="h4" color="#1b3a2b" fontWeight="bold">{item.title}</Typography>
+                <Typography variant="subtitle1" color="text.secondary">Application ID: {item.id}</Typography>
+              </Box>
+              <Chip label={item.status} color={item.color} sx={{ px: 2, height: 32 }} />
+            </Box>
+            <Divider sx={{ my: 3 }} />
+            <Typography variant="h6" gutterBottom>Application Status</Typography>
+            <Box sx={{ width: '100%', mb: 4, mt: 2 }}>
+              <Stepper activeStep={activeStep} alternativeLabel>
+                {steps.map((label) => (<Step key={label}><StepLabel>{label}</StepLabel></Step>))}
+              </Stepper>
+            </Box>
+            <Grid container spacing={4}>
+              <Grid item xs={12} md={8}>
+                <Typography variant="h6" gutterBottom>Submission Details</Typography>
+                <Paper variant="outlined" sx={{ p: 2, bgcolor: '#fafafa' }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={6}><Typography variant="body2" color="text.secondary">Submitted On:</Typography></Grid>
+                    <Grid item xs={6}><Typography variant="body2" fontWeight="bold">{item.date}</Typography></Grid>
+                    <Grid item xs={6}><Typography variant="body2" color="text.secondary">Reviewer:</Typography></Grid>
+                    <Grid item xs={6}><Typography variant="body2" fontWeight="bold">Prof. A. Sharma</Typography></Grid>
+                    <Grid item xs={12} sx={{ mt: 1 }}>
+                      <Typography variant="body2" color="text.secondary">Remarks:</Typography>
+                      <Typography variant="body2" sx={{ mt: 0.5, fontStyle: 'italic' }}>"Proposal looks promising. Please prepare the budget breakdown for the next interview phase."</Typography>
+                    </Grid>
+                  </Grid>
+                </Paper>
+              </Grid>
+              <Grid item xs={12} md={4}>
+                <Typography variant="h6" gutterBottom>Actions</Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Button variant="outlined" startIcon={<Icon name="visibility" />}>View Submitted PDF</Button>
+                  <Button variant="outlined" startIcon={<Icon name="edit" />} disabled={item.status !== 'Pending'}>Edit Application</Button>
+                  <Button variant="contained" color="error" disabled={item.status === 'Approved'}>Withdraw</Button>
+                </Box>
+              </Grid>
+            </Grid>
+          </Paper>
+        </Box>
+      );
+    };
+
+    const FundingDetailView = ({ item, onBack }) => {
+      if (!item) return null;
+      return (
+        <Box>
+          <Button startIcon={<Icon name="arrow_back" />} onClick={onBack} sx={{ mb: 2 }}>Back to Funding</Button>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={8}>
+              <Paper sx={{ p: 4, height: '100%' }}>
+                <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+                  <Avatar sx={{ width: 64, height: 64, bgcolor: '#e8f5e9', color: '#1b3a2b' }} variant="rounded"><Icon name="monetization_on" style={{ fontSize: 32 }} /></Avatar>
+                  <Box>
+                    <Typography variant="h5" fontWeight="bold">{item.name}</Typography>
+                    <Typography variant="h6" color="success.main">{item.range}</Typography>
+                    <Typography variant="body2" color="text.secondary">Investor: {item.investor}</Typography>
+                  </Box>
+                </Box>
+                <Divider sx={{ my: 3 }} />
+                <Typography variant="h6" gutterBottom>About the Opportunity</Typography>
+                <Typography paragraph color="text.secondary">This funding round is focused on early-stage startups in the AgriTech and Sustainability sectors.</Typography>
+                <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Requirements</Typography>
+                <List dense>
+                  <ListItem><ListItemIcon><Icon name="check" color="green" /></ListItemIcon><ListItemText primary="Minimum Viable Product (MVP) Ready" /></ListItem>
+                  <ListItem><ListItemIcon><Icon name="check" color="green" /></ListItemIcon><ListItemText primary="Registered Entity (LLP/Pvt Ltd)" /></ListItem>
+                  <ListItem><ListItemIcon><Icon name="check" color="green" /></ListItemIcon><ListItemText primary="Pitch Deck (Max 15 Slides)" /></ListItem>
+                </List>
+              </Paper>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Card sx={{ bgcolor: '#1b3a2b', color: 'white' }}>
+                <CardContent sx={{ p: 3 }}>
+                  <Typography variant="h6" gutterBottom>Apply Now</Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.8, mb: 3 }}>Submissions close on Jan 31, 2026. Make sure your profile is updated.</Typography>
+                  <Button variant="contained" color="secondary" fullWidth size="large" sx={{ mb: 2 }}>Submit Pitch Deck</Button>
+                  <Button variant="outlined" sx={{ color: 'white', borderColor: 'rgba(255,255,255,0.3)' }} fullWidth>Save for Later</Button>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </Box>
+      );
+    };
+
+    const GrantApplicationDialog = ({ open, grant, onClose }) => {
+      const fileInputRef = React.useRef(null);
+      if (!grant) return null;
+      return (
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth TransitionComponent={Transition} scroll="paper">
+          <DialogTitle component="div" sx={{ bgcolor: '#1b3a2b', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Box>
+              <Typography variant="h6" component="div">Apply for Grant</Typography>
+              <Typography variant="caption" component="div" sx={{ opacity: 0.8 }}>{grant.title} • {grant.amount}</Typography>
+            </Box>
+            <IconButton onClick={onClose} sx={{ color: 'white' }}><Icon name="close" /></IconButton>
+          </DialogTitle>
+          <DialogContent dividers sx={{ p: 4 }}>
+            <Grid container spacing={3}>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Applicant Name</Typography>
+                <TextField fullWidth defaultValue="Student User" disabled variant="outlined" size="small" />
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Email Address</Typography>
+                <TextField fullWidth defaultValue="student@university.edu" disabled variant="outlined" size="small" />
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Project Title <span style={{ color: 'red' }}>*</span></Typography>
+                <TextField fullWidth placeholder="Enter the title of your project" variant="outlined" />
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Statement of Purpose <span style={{ color: 'red' }}>*</span></Typography>
+                <TextField fullWidth multiline rows={4} placeholder="Why do you need this grant? (Max 200 words)" variant="outlined" />
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Supporting Documents</Typography>
+                <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={(e) => alert(`File Selected: ${e.target.files[0]?.name}`)} />
+                <Box onClick={() => fileInputRef.current.click()} sx={{ border: '2px dashed #ccc', borderRadius: 2, p: 3, textAlign: 'center', cursor: 'pointer', bgcolor: '#fafafa', '&:hover': { bgcolor: '#f0f0f0', borderColor: '#1b3a2b' } }}>
+                  <Icon name="cloud_upload" style={{ fontSize: 32, color: '#999' }} />
+                  <Typography variant="body2" color="textSecondary">Click to upload Proposal (PDF)</Typography>
+                </Box>
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions sx={{ p: 3, bgcolor: '#f9f9f9' }}>
+            <Button onClick={onClose} variant="outlined" color="inherit">Cancel</Button>
+            <Button variant="contained" color="primary" onClick={onClose}>Submit Application</Button>
+          </DialogActions>
+        </Dialog>
+      );
+    };
+
+    const FundingRequestDialog = ({ open, onClose }) => {
+      const fileInputRef = React.useRef(null);
+      const [termsAccepted, setTermsAccepted] = React.useState(false);
+      return (
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth TransitionComponent={Transition} scroll="paper">
+          <DialogTitle component="div" sx={{ bgcolor: '#1b3a2b', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <Avatar variant="rounded" sx={{ bgcolor: 'rgba(255,255,255,0.15)', color: 'white' }}><Icon name="campaign" /></Avatar>
+              <Box>
+                <Typography variant="h6" component="div">Request Funding</Typography>
+                <Typography variant="caption" component="div" sx={{ opacity: 0.8 }}>Submit proposal to Investor Network</Typography>
+              </Box>
+            </Box>
+            <IconButton onClick={onClose} sx={{ color: 'white' }}><Icon name="close" /></IconButton>
+          </DialogTitle>
+          <DialogContent dividers sx={{ p: 4 }}>
+            <Grid container spacing={3}>
+              <Grid item xs={12}><Typography variant="subtitle2" fontWeight="bold" color="#1b3a2b">PROJECT DETAILS</Typography></Grid>
+              <Grid item xs={12} sm={8}><TextField fullWidth label="Startup / Project Title" placeholder="e.g. EcoWare Solutions" variant="outlined" size="small" /></Grid>
+              <Grid item xs={12} sm={4}><TextField select fullWidth label="Category" SelectProps={{ native: true }} size="small" variant="outlined"><option>AgriTech</option><option>EdTech</option><option>FinTech</option><option>Sustainability</option></TextField></Grid>
+              <Grid item xs={12} sm={6}><TextField fullWidth label="Amount Needed" type="number" size="small" variant="outlined" InputProps={{ startAdornment: <InputAdornment position="start">₹</InputAdornment> }} /></Grid>
+              <Grid item xs={12} sm={6}><TextField fullWidth label="Equity Offer (%)" type="number" size="small" variant="outlined" InputProps={{ endAdornment: <InputAdornment position="end">%</InputAdornment> }} /></Grid>
+              <Grid item xs={12}><TextField fullWidth multiline rows={4} variant="outlined" label="Utilization Plan & Pitch" placeholder="Describe your solution and how funds will be used..." /></Grid>
+              <Grid item xs={12}>
+                <Typography variant="subtitle2" fontWeight="bold" gutterBottom>Pitch Deck (PDF)</Typography>
+                <Box onClick={() => fileInputRef.current.click()} sx={{ border: '2px dashed #ccc', borderRadius: 2, p: 2, textAlign: 'center', cursor: 'pointer', bgcolor: '#fafafa', '&:hover': { bgcolor: '#f0f0f0', borderColor: '#1b3a2b' } }}>
+                  <input type="file" ref={fileInputRef} style={{ display: 'none' }} />
+                  <Icon name="cloud_upload" style={{ fontSize: 32, color: '#1b3a2b' }} />
+                  <Typography variant="body2" fontWeight="bold">Click to Upload PDF</Typography>
+                </Box>
+              </Grid>
+              <Grid item xs={12}>
+                <FormControlLabel control={<Checkbox checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} sx={{ color: '#1b3a2b', '&.Mui-checked': { color: '#1b3a2b' } }} />} label={<Typography variant="body2">I certify that the information provided is accurate.</Typography>} />
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions sx={{ p: 3, bgcolor: '#f9f9f9' }}>
+            <Button onClick={onClose} variant="outlined" color="inherit">Cancel</Button>
+            <Button variant="contained" disabled={!termsAccepted} onClick={onClose} sx={{ bgcolor: '#1b3a2b', '&:hover': { bgcolor: '#142e22' } }}>Submit Request</Button>
+          </DialogActions>
+        </Dialog>
+      );
+    };
+
+    const StudentRegistrationForm = ({ open, onClose }) => {
+      const [formData, setFormData] = React.useState({
+        firstName: '', lastName: '', email: '', mobile: '',
+        dob: '', gender: '', religion: '', community: '',
+        institutionType: '', schoolName: '', schoolGrade: '', medium: 'English', board: '',
+        schoolType: '', schoolDistrict: '', schoolState: '',
+        collegeName: '', dept: '', degree: '', yearStudy: '',
+        parentName: '', relationship: '', parentContact: '', emergencyContact: '',
+        pincode: '', country: '', state: '', district: '', area: '',
+        appType: 'individual', ideaName: '', domain: '', problemStmt: '', solutionDesc: '',
+        teamCount: '', teamLeader: '', leaderContact: '',
+        declaration: false
+      });
+
+      const handlePincodeChange = async (e) => {
+        const pin = e.target.value;
+        if (!/^\d*$/.test(pin) || pin.length > 6) return;
+        setFormData(prev => ({ ...prev, pincode: pin }));
+        if (pin.length === 6) {
+          try {
+            setFormData(prev => ({ ...prev, state: 'Fetching...', district: 'Fetching...' }));
+            const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+            const data = await res.json();
+            if (data[0].Status === "Success") {
+              const { State, District, Name } = data[0].PostOffice[0];
+              setFormData(prev => ({ ...prev, state: State, district: District, area: Name, country: 'India' }));
+            } else {
+              alert("Invalid Pincode.");
+              setFormData(prev => ({ ...prev, state: '', district: '', area: '', country: '' }));
+            }
+          } catch (err) {
+            setFormData(prev => ({ ...prev, state: '', district: '', country: '' }));
+          }
+        } else {
+          if (pin.length === 0) setFormData(prev => ({ ...prev, state: '', district: '', area: '', country: '' }));
+        }
+      };
+
+      const handleChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+      };
+
+      const styles = {
+        primaryGreen: '#1b3a2b', hoverGreen: '#142e22', bgLight: '#f8f9fa',
+        sectionHeader: { backgroundColor: '#1b3a2b', color: 'white', padding: '10px 20px', fontWeight: 600, fontSize: '1.1rem', marginBottom: '20px', borderRadius: '2px', textAlign: 'center', marginTop: '20px', fontFamily: '"Segoe UI", sans-serif' },
+        label: { fontWeight: 600, marginBottom: '5px', display: 'block', color: '#333', fontSize: '0.9rem' },
+        requiredStar: { color: '#d32f2f', marginLeft: '3px', fontWeight: 'bold' },
+        subLabel: { fontSize: '0.8em', color: '#666', marginTop: '4px', display: 'block' },
+        input: { '& .MuiOutlinedInput-root': { bgcolor: 'white' } }
+      };
+
+      const SectionHeader = ({ title }) => (<Box sx={styles.sectionHeader}>{title}</Box>);
+      const Label = ({ text, required, subText }) => (
+        <Box><Typography variant="body2" sx={styles.label}>{text} {required && <span style={styles.requiredStar}>*</span>}</Typography>{subText && <Typography variant="caption" sx={{ color: '#666', fontStyle: 'italic' }}>{subText}</Typography>}</Box>
+      );
+
+      return (
+        <Dialog open={open} onClose={onClose} fullWidth maxWidth="lg" scroll="paper" TransitionComponent={Transition}>
+          <DialogTitle component="div" sx={{ bgcolor: '#1b3a2b', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="h6" component="div">My Profile</Typography>
+            <IconButton onClick={onClose} sx={{ color: 'white' }}><Icon name="close" /></IconButton>
+          </DialogTitle>
+          <DialogContent dividers sx={{ bgcolor: '#f4f9f4', p: 3 }}>
+            <Box sx={{ maxWidth: '100%', mx: 'auto' }}>
+              <form onSubmit={(e) => { e.preventDefault(); alert("Profile Updated Successfully!"); onClose(); }} autoComplete="off">
+                <Paper elevation={0} sx={{ p: 0, bgcolor: 'transparent' }}>
+                  <Box sx={{ bgcolor: 'white', borderRadius: 2, border: '1px solid #ddd', p: 0, overflow: 'hidden' }}>
+                    <SectionHeader title="Personal Information" />
+                    <Box sx={{ px: 4, pb: 2 }}>
+                      <Grid container spacing={3}>
+                        <Grid item xs={12} sm={6}><Label text="First Name" required /><TextField fullWidth name="firstName" value={formData.firstName} onChange={handleChange} sx={styles.input} /></Grid>
+                        <Grid item xs={12} sm={6}><Label text="Last Name" required /><TextField fullWidth name="lastName" value={formData.lastName} onChange={handleChange} sx={styles.input} /></Grid>
+                        <Grid item xs={12} sm={6}><Label text="Email Address" required /><TextField fullWidth type="email" name="email" value={formData.email} onChange={handleChange} sx={styles.input} /></Grid>
+                        <Grid item xs={12} sm={6}><Label text="Mobile Number (without SDI Code)" required /><TextField fullWidth type="tel" name="mobile" value={formData.mobile} onChange={handleChange} sx={styles.input} /></Grid>
+                        <Grid item xs={12} sm={3}><Label text="Date of Birth" /><TextField fullWidth type="date" name="dob" value={formData.dob} onChange={handleChange} sx={styles.input} InputLabelProps={{ shrink: true }} /></Grid>
+                        <Grid item xs={12} sm={3}><Label text="Gender" required /><RadioGroup row name="gender" value={formData.gender} onChange={handleChange} sx={{ flexWrap: 'nowrap', mt: 1 }}>{['Male', 'Female', 'Other'].map(opt => <FormControlLabel key={opt} value={opt} control={<Radio size="small" sx={{ color: styles.primaryGreen, '&.Mui-checked': { color: styles.primaryGreen }, p: 0.5 }} />} label={<Typography variant="body2" sx={{ fontSize: '0.85rem' }}>{opt}</Typography>} sx={{ mr: 1, ml: 0 }} />)}</RadioGroup></Grid>
+                        <Grid item xs={12} sm={6}><Label text="Community" /><TextField select fullWidth name="community" value={formData.community} onChange={handleChange} sx={styles.input}><MenuItem value="" disabled>Select Community</MenuItem>{['OC', 'BC', 'MBC', 'SC/ST'].map(opt => <MenuItem key={opt} value={opt}>{opt}</MenuItem>)}</TextField></Grid>
+                      </Grid>
+                    </Box>
+                    <SectionHeader title="Academic Details" />
+                    <Box sx={{ px: 4, pb: 2 }}>
+                      <Box sx={{ mb: 3 }}>
+                        <Label text="Are you from School or College?" />
+                        <RadioGroup row name="institutionType" value={formData.institutionType} onChange={handleChange}>
+                          <FormControlLabel value="school" control={<Radio sx={{ color: styles.primaryGreen, '&.Mui-checked': { color: styles.primaryGreen } }} />} label="School" />
+                          <FormControlLabel value="college" control={<Radio sx={{ color: styles.primaryGreen, '&.Mui-checked': { color: styles.primaryGreen } }} />} label="College" />
+                        </RadioGroup>
+                      </Box>
+                      {formData.institutionType === 'school' && (
+                        <Grid container spacing={3}>
+                          <Grid item xs={12} sm={6}><Label text="School Name" required /><TextField fullWidth name="schoolName" value={formData.schoolName} onChange={handleChange} sx={styles.input} /></Grid>
+                          <Grid item xs={12} sm={6}><Label text="Class / Grade" required /><TextField fullWidth name="schoolGrade" value={formData.schoolGrade} onChange={handleChange} sx={styles.input} /></Grid>
+                          <Grid item xs={12} sm={6}><Label text="School type" /><TextField fullWidth name="schoolState" value={formData.schoolState} onChange={handleChange} sx={styles.input} /></Grid>
+
+                          <Grid item xs={12} sm={6}><Label text="Medium" /><TextField select fullWidth name="medium" value={formData.medium} onChange={handleChange} sx={styles.input}>{['English', 'Tamil', 'Hindi', 'Other'].map(opt => <MenuItem key={opt} value={opt}>{opt}</MenuItem>)}</TextField></Grid>
+                          <Grid item xs={12} sm={6}><Label text="District" /><TextField fullWidth name="schoolDistrict" value={formData.schoolDistrict} onChange={handleChange} sx={styles.input} /></Grid>
+                          <Grid item xs={12} sm={6}><Label text="State" /><TextField fullWidth name="schoolState" value={formData.schoolState} onChange={handleChange} sx={styles.input} /></Grid>
+
+                        </Grid>
+                      )}
+                      {formData.institutionType === 'college' && (
+                        <Grid container spacing={3}>
+                          <Grid item xs={12} sm={6}><Label text="College Name" /><TextField fullWidth name="collegeName" value={formData.collegeName} onChange={handleChange} sx={styles.input} /></Grid>
+                          <Grid item xs={12} sm={6}><Label text="Department" /><TextField fullWidth name="dept" value={formData.dept} onChange={handleChange} sx={styles.input} /></Grid>
+                          <Grid item xs={12} sm={6}><Label text="Year" /><TextField fullWidth name="yearStudy" value={formData.yearStudy} onChange={handleChange} sx={styles.input} /></Grid>
+                        </Grid>
+                      )}
+                    </Box>
+                    <Box sx={{ px: 4, pt: 2, pb: 2 }}>
+                      <Typography variant="h6" sx={{ ...styles.sectionHeader, mt: 0, fontSize: '1rem', py: 1 }}>Parents / Guardian Details</Typography>
+                      <Grid container spacing={3}>
+                        <Grid item xs={12} sm={6}><Label text="Parent Name" /><TextField fullWidth name="parentName" value={formData.parentName} onChange={handleChange} sx={styles.input} /></Grid>
+                        <Grid item xs={12} sm={6}><Label text="Contact" /><TextField fullWidth name="parentContact" value={formData.parentContact} onChange={handleChange} sx={styles.input} /></Grid>
+                        <Grid item xs={12} sm={6}><Label text="Guardian Name" /><TextField fullWidth name="parentContact" value={formData.parentContact} onChange={handleChange} sx={styles.input} /></Grid>
+                        <Grid item xs={12} sm={6}><Label text="Contact" /><TextField fullWidth name="parentContact" value={formData.parentContact} onChange={handleChange} sx={styles.input} /></Grid>
+
+                      </Grid>
+                    </Box>
+                    <SectionHeader title="Permanent Address" />
+                    <Box sx={{ px: 4, pb: 2 }}>
+                      <Grid container spacing={3}>
+                        <Grid item xs={12} sm={2}><Label text="Pincode" required /><TextField fullWidth name="pincode" value={formData.pincode} onChange={handlePincodeChange} placeholder="6-digit" sx={styles.input} /></Grid>
+                        <Grid item xs={12} sm={2}><Label text="Country" required /><TextField fullWidth value={formData.country} InputProps={{ readOnly: true }} sx={{ ...styles.input, bgcolor: '#e9ecef' }} /></Grid>
+                        <Grid item xs={12} sm={2}><Label text="State" required /><TextField fullWidth value={formData.state} placeholder="State" InputProps={{ readOnly: true }} sx={{ ...styles.input, bgcolor: '#e9ecef' }} /></Grid>
+                        <Grid item xs={12} sm={3}><Label text="District" required /><TextField fullWidth value={formData.district} placeholder="District" InputProps={{ readOnly: true }} sx={{ ...styles.input, bgcolor: '#e9ecef' }} /></Grid>
+                        <Grid item xs={12} sm={3}><Label text="Area" required /><TextField fullWidth name="area" value={formData.area} onChange={handleChange} sx={styles.input} /></Grid>
+                      </Grid>
+                    </Box>
+                    <SectionHeader title="Startup Information" />
+                    <Box sx={{ px: 4, pb: 2 }}>
+                      <Box sx={{ mb: 3 }}>
+                        <Label text="Are you applying as:" />
+                        <RadioGroup row name="appType" value={formData.appType} onChange={handleChange}>
+                          <FormControlLabel value="individual" control={<Radio sx={{ color: styles.primaryGreen, '&.Mui-checked': { color: styles.primaryGreen } }} />} label="Individual" />
+                          <FormControlLabel value="team" control={<Radio sx={{ color: styles.primaryGreen, '&.Mui-checked': { color: styles.primaryGreen } }} />} label="Team" />
+                        </RadioGroup>
+                      </Box>
+                      <Grid container spacing={3}>
+                        <Grid item xs={12} sm={6}><Label text="Startup / Idea Name" /><TextField fullWidth name="ideaName" value={formData.ideaName} onChange={handleChange} sx={styles.input} /></Grid>
+                        <Grid item xs={12} sm={6}><Label text="Domain / Sector" /><TextField fullWidth name="domain" value={formData.domain} onChange={handleChange} sx={styles.input} /></Grid>
+                        <Grid item xs={12}><Label text="Problem Statement (Short Description)" /><TextField fullWidth multiline rows={2} name="problemStmt" value={formData.problemStmt} onChange={handleChange} sx={styles.input} /></Grid>
+                        <Grid item xs={12}><Label text="Solution / Idea Description" /><TextField fullWidth multiline rows={3} name="solutionDesc" value={formData.solutionDesc} onChange={handleChange} sx={styles.input} /></Grid>
+                      </Grid>
+                    </Box>
+                    {formData.appType === 'team' && (
+                      <Box sx={{ m: 4 }}>
+                        <SectionHeader title="Team Details" />
+                        <Box sx={{ px: 4, pb: 2 }}>
+                          <div style={{ backgroundColor: '#fff3cd', color: '#856404', padding: '10px', borderRadius: '4px', marginBottom: '20px', fontSize: '0.85em', border: '1px solid #ffeeba' }}>
+                            This field is only for Team not for individual.
+                          </div>
+                          <Grid container spacing={3}>
+                            <Grid item xs={12} sm={4}><Label text="Number of Team Members" /><Typography variant="caption" sx={styles.subLabel}>Min 1, Max 6</Typography><TextField fullWidth type="number" name="teamCount" value={formData.teamCount} inputProps={{ min: 1, max: 6 }} onChange={handleChange} sx={styles.input} /></Grid>
+                            <Grid item xs={12} sm={4}><Label text="Team Leader Name" /><Typography variant="caption" sx={{ display: 'block', height: '24px' }}>&nbsp;</Typography><TextField fullWidth name="teamLeader" value={formData.teamLeader} onChange={handleChange} sx={styles.input} /></Grid>
+                            <Grid item xs={12} sm={4}><Label text="Team Leader Contact" /><Typography variant="caption" sx={{ display: 'block', height: '24px' }}>&nbsp;</Typography><TextField fullWidth name="leaderContact" value={formData.leaderContact} onChange={handleChange} sx={styles.input} /></Grid>
+                          </Grid>
+                        </Box>
+                      </Box>
+                    )}
+                    <SectionHeader title="Upload Documents" />
+                    <Box sx={{ px: 4, pb: 4 }}>
+                      <Grid container spacing={3}>
+                        {[
+                          { label: 'Student Photograph', sub: 'Upload Photo', accept: 'image/*' },
+                          { label: 'ID Proof', sub: 'Upload ID Proof', accept: '*' },
+                          { label: 'Bonafide Certificate', sub: 'Upload PDF', accept: '.pdf' },
+                          { label: 'Idea Summary', sub: 'Upload PDF', accept: '.pdf' }
+                        ].map((doc, idx) => (
+                          <Grid item xs={12} sm={3} key={idx}>
+                            <Label text={doc.label} />
+                            <Button component="label" variant="outlined" fullWidth startIcon={<Icon name="cloud_upload" />} sx={{ textTransform: 'none', color: '#555', borderColor: '#ccc', mt: 1, '&:hover': { bgcolor: '#f0f0f0', borderColor: '#aaa' } }}>
+                              Choose File<input type="file" hidden accept={doc.accept} />
+                            </Button>
+                            <Typography sx={styles.subLabel}>{doc.sub}</Typography>
+                          </Grid>
+                        ))}
+                      </Grid>
+                    </Box>
+                    <Box sx={{ px: 4, pb: 4, mb: 2 }}>
+                      <FormControlLabel control={<Checkbox name="declaration" onChange={handleChange} required sx={{ color: styles.primaryGreen, '&.Mui-checked': { color: styles.primaryGreen } }} />} label="I hereby declare that the above information is true and correct." />
+                      <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
+                        <Button type="submit" variant="contained" sx={{ bgcolor: styles.primaryGreen, color: 'white', px: 4 }}>Submit Registration</Button>
+                        <Button type="reset" variant="outlined" onClick={() => window.location.reload()} sx={{ color: '#333' }}>Reset Form</Button>
+                      </Box>
+                    </Box>
+                  </Box>
+                </Paper>
+              </form>
+            </Box>
+          </DialogContent>
+        </Dialog>
+      );
+    };
+
+    // --- BIGGER MY APPLICATIONS VIEW ---
+      const MyApplicationsView = ({ onViewDetails }) => (
+        <Box>
+          <Typography variant="h4" sx={{ mb: 4, color: '#1b3a2b', fontWeight: 'bold' }}>My Applications History</Typography>
+          <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
+            <Table sx={{ minWidth: 650 }}>
+              <TableHead sx={{ bgcolor: '#1b3a2b' }}>
+                <TableRow>
+                  <TableCell sx={{ color: 'white', fontSize: '1.1rem', py: 2.5, fontWeight: 'bold' }}>Application ID</TableCell>
+                  <TableCell sx={{ color: 'white', fontSize: '1.1rem', py: 2.5, fontWeight: 'bold' }}>Type</TableCell>
+                  <TableCell sx={{ color: 'white', fontSize: '1.1rem', py: 2.5, fontWeight: 'bold' }}>Title</TableCell>
+                  <TableCell sx={{ color: 'white', fontSize: '1.1rem', py: 2.5, fontWeight: 'bold' }}>Date Applied</TableCell>
+                  <TableCell sx={{ color: 'white', fontSize: '1.1rem', py: 2.5, fontWeight: 'bold' }}>Status</TableCell>
+                  <TableCell sx={{ color: 'white', fontSize: '1.1rem', py: 2.5, fontWeight: 'bold' }}>Action</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {[
+                  { id: '#APP-001', type: 'Grant', title: 'AgriTech Innovation Fund', date: 'Jan 02, 2026', status: 'Pending', color: 'warning' },
+                  { id: '#APP-002', type: 'Internship', title: 'Data Analyst @ GreenCorp', date: 'Dec 28, 2025', status: 'Interview', color: 'info' },
+                  { id: '#APP-003', type: 'Funding', title: 'Seed Funding Round 1', date: 'Dec 15, 2025', status: 'Approved', color: 'success' },
+                  { id: '#APP-004', type: 'Grant', title: 'Young Scientist Award', date: 'Nov 10, 2025', status: 'Rejected', color: 'error' },
+                ].map((row) => (
+                  <TableRow key={row.id} sx={{ '&:last-child td, &:last-child th': { border: 0 }, '&:hover': { bgcolor: '#f9f9f9' } }}>
+                    <TableCell sx={{ fontSize: '1rem', py: 3 }}>{row.id}</TableCell>
+                    <TableCell sx={{ fontSize: '1rem', py: 3 }}>{row.type}</TableCell>
+                    <TableCell sx={{ fontWeight: 'bold', fontSize: '1rem', py: 3 }}>{row.title}</TableCell>
+                    <TableCell sx={{ fontSize: '1rem', py: 3 }}>{row.date}</TableCell>
+                    <TableCell sx={{ py: 3 }}><Chip label={row.status} color={row.color} sx={{ fontSize: '0.9rem', height: 32, px: 1 }} /></TableCell>
+                    <TableCell sx={{ py: 3 }}><Button variant="outlined" onClick={() => onViewDetails(row)} sx={{ px: 3 }}>View</Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      );
+
+    // --- 1. STUDENT GRANTS VIEW (BIGGER CARDS) ---
+      const StudentGrantsView = ({ onApply }) => {
+        const [activeCategory, setActiveCategory] = React.useState(null); 
+        const [searchTerm, setSearchTerm] = React.useState("");
+
+        const handleCategoryClick = (category) => {
+          setActiveCategory(category);
+          setSearchTerm(""); 
+        };
+
+        const handleBack = () => {
+          setActiveCategory(null);
+        };
+
+        const filteredGrants = React.useMemo(() => {
+          if (!activeCategory) return [];
+          
+          return ALL_GRANTS_DATA.filter(grant => {
+            let matchesCategory = false;
+            if (activeCategory === 'All') matchesCategory = true;
+            else if (activeCategory === 'Women') matchesCategory = grant.gender === 'Female' || grant.tags.includes('Women');
+            else matchesCategory = grant.tags.some(tag => tag.includes(activeCategory));
+
+            const lowerTerm = searchTerm.toLowerCase();
+            const matchesSearch = grant.title.toLowerCase().includes(lowerTerm) || 
+                                  grant.location.toLowerCase().includes(lowerTerm);
+
+            return matchesCategory && matchesSearch;
+          });
+        }, [activeCategory, searchTerm]);
+
+        const CATEGORIES = [
+          { id: 'tech', title: 'Tech & Innovation', icon: 'memory', gradient: 'linear-gradient(135deg, #1b3a2b 0%, #275a3f 100%)', shadow: 'rgba(27, 58, 43, 0.3)', desc: 'AI, Coding, SaaS, and Hardware grants', filterTags: ['Tech', 'AI', 'Startup', 'Security', 'Hardware'] },
+          { id: 'research', title: 'Research & Science', icon: 'biotech', gradient: 'linear-gradient(135deg, #1b3a2b 0%, #275a3f 100%)', shadow: 'rgba(27, 58, 43, 0.3)', desc: 'Fellowships for Medical, Space & Bio-Sciences', filterTags: ['Research', 'Health', 'Space', 'Science', 'Agri'] },
+          { id: 'women', title: 'Women Empowerment', icon: 'female', gradient: 'linear-gradient(135deg, #1b3a2b 0%, #275a3f 100%)', shadow: 'rgba(27, 58, 43, 0.3)', desc: 'Exclusive scholarships & leadership awards', filterTags: ['Women', 'Female', 'Diversity'] },
+          { id: 'govt', title: 'Govt. Schemes', icon: 'account_balance', gradient: 'linear-gradient(135deg, #1b3a2b 0%, #275a3f 100%)', shadow: 'rgba(27, 58, 43, 0.3)', desc: 'National and State financial aid programs', filterTags: ['Govt', 'State', 'Regional', 'Education', 'Social'] }
+        ];
+
+        // --- SUB-COMPONENT: The Landing Page (4 Icons) ---
+        const CategoriesLanding = () => (
+          <Fade in={true} timeout={600}>
+            <Box>
+              <Box sx={{ mb: 4, textAlign: 'center' }}>
+                <Typography variant="h4" fontWeight="800" sx={{ color: '#1b3a2b', mb: 1 }}>Grant Categories</Typography>
+                <Typography variant="body1" color="text.secondary">Select a domain to explore funding opportunities.</Typography>
+              </Box>
+
+              <Grid container spacing={3}> 
+                {CATEGORIES.map((cat) => (
+                  <Grid item xs={12} sm={6} key={cat.id}> 
+                    <CardActionArea
+                      onClick={() => handleCategoryClick(cat.id)}
+                      sx={{ borderRadius: 4, height: '100%', transition: 'all 0.3s ease', '&:hover': { transform: 'translateY(-6px)' } }}
+                    >
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          p: 4, // Increased Padding
+                          height: 200, // Increased Height (from 160 to 200)
+                          borderRadius: 4,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          textAlign: 'center',
+                          background: cat.gradient,
+                          color: 'white',
+                          boxShadow: `0 10px 25px ${cat.shadow}`,
+                          position: 'relative',
+                          overflow: 'hidden'
+                        }}
+                      >
+                        {/* Decorative background circle */}
+                        <Box sx={{ position: 'absolute', top: -30, right: -30, width: 100, height: 100, borderRadius: '50%', bgcolor: 'rgba(255,255,255,0.1)' }} />
+
+                        <Icon name={cat.icon} style={{ fontSize: 56, marginBottom: 16 }} /> {/* Increased Icon Size */}
+                        <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ fontSize: '1.4rem' }}>{cat.title}</Typography> {/* Increased Font */}
+                        <Typography variant="body2" sx={{ opacity: 0.9 }}>{cat.desc}</Typography>
+                      </Paper>
+                    </CardActionArea>
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
+          </Fade>
+        );
+
+        // --- SUB-COMPONENT: The List View (Specific Category) ---
+        const CategoryListView = () => (
+          <Box sx={{ pt: 4 }}> 
+            <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+              <IconButton onClick={handleBack} sx={{ bgcolor: '#fff', border: '1px solid #ddd' }}>
+                <Icon name="arrow_back" color="#333" />
+              </IconButton>
+              <Box>
+                <Typography variant="h5" fontWeight="bold" sx={{ color: '#1b3a2b' }}>
+                  {activeCategory === 'All' ? 'All Grants' : 
+                   activeCategory === 'tech' ? 'Tech & Innovation' :
+                   activeCategory === 'research' ? 'Research & Science' :
+                   activeCategory === 'women' ? 'Women Empowerment' : 'Govt. Schemes'}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">Showing {filteredGrants.length} results</Typography>
+              </Box>
+            </Box>
+
+            <Paper elevation={0} sx={{ p: 2, mb: 4, bgcolor: 'white', borderRadius: 3, border: '1px solid #eee' }}>
+              <TextField 
+                fullWidth placeholder={`Search in ${activeCategory}...`} variant="outlined" size="small"
+                value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+                InputProps={{ 
+                  startAdornment: <InputAdornment position="start"><Icon name="search" color="#999" /></InputAdornment>,
+                  sx: { borderRadius: 2, bgcolor: '#f8f9fa' }
+                }}
+              />
+            </Paper>
+
+            <Grid container spacing={3}>
+              {filteredGrants.map((grant) => (
+                <Grid item xs={12} sm={6} md={4} key={grant.id}>
+                  <Fade in={true}>
+                    <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', transition: 'transform 0.2s', '&:hover': { transform: 'translateY(-4px)' }, borderRadius: 3, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
+                      <Box sx={{ bgcolor: '#1b3a2b', height: 6 }} />
+                      <CardContent sx={{ flexGrow: 1, p: 3 }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                          <Chip label={grant.location} size="small" icon={<Icon name="location_on" style={{fontSize:14}} />} sx={{ bgcolor: '#f0f0f0' }} />
+                          <Typography variant="caption" sx={{ color: '#d32f2f', fontWeight: 'bold' }}>Due: {grant.deadline}</Typography>
+                        </Box>
+                        <Typography variant="h6" fontWeight="bold" gutterBottom sx={{ minHeight: 50, lineHeight: 1.3, fontSize: '1.05rem', mt: 1 }}>{grant.title}</Typography>
+                        <Typography variant="h5" color="primary" sx={{ mb: 2, fontWeight: 700 }}>{grant.amount}</Typography>
+                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                          {grant.tags.slice(0,3).map(tag => <Chip key={tag} label={tag} size="small" variant="outlined" sx={{fontSize:'0.75rem'}} />)}
+                        </Box>
+                      </CardContent>
+                      <Box sx={{ p: 2, pt: 0 }}>
+                        <Button fullWidth variant="contained" color="primary" onClick={() => onApply(grant)} sx={{ py: 1 }}>Apply Now</Button>
+                      </Box>
+                    </Card>
+                  </Fade>
+                </Grid>
+              ))}
+              {filteredGrants.length === 0 && (
+                <Grid item xs={12}><Box sx={{ textAlign: 'center', py: 8, opacity: 0.6 }}><Icon name="search_off" style={{ fontSize: 64 }} /><Typography variant="h6">No grants found.</Typography></Box></Grid>
+              )}
+            </Grid>
+          </Box>
+        );
+
+        return (
+          <Box sx={{ minHeight: "100vh", pb: 5, px: 3 }}>
+            <Toolbar /> 
+            {activeCategory ? <CategoryListView /> : <CategoriesLanding />}
+          </Box>
+        );
+      };
+
+    // --- UPDATED PROJECT FUNDING VIEW (FIXED SPACING) ---
+      const ProjectFundingView = ({ onViewDetails, onCreateRequest }) => (
+        <Box sx={{ mt: 30 }}> {/* Added Top Margin to prevent hiding behind header */}
+          
+          {/* 1. Request Box - Bigger & Cleaner */}
+          <Paper sx={{ p: 5, textAlign: 'center', mb: 6, border: '2px dashed #4caf50', bgcolor: '#f0fdf4', borderRadius: 4 }}>
+            <Icon name="rocket_launch" style={{ fontSize: 64, color: '#2e7d32', marginBottom: 16 }} />
+            <Typography variant="h5" fontWeight="bold" gutterBottom>Have a Startup Idea?</Typography>
+            <Typography color="text.secondary" sx={{ mb: 4, maxWidth: 600, mx: 'auto', fontSize: '1.1rem' }}>
+              Submit your pitch deck to our network of verified investors and secure the capital you need to scale your innovation.
+            </Typography>
+            <Button 
+              variant="contained" 
+              color="secondary" 
+              size="large" 
+              onClick={onCreateRequest}
+              sx={{ px: 5, py: 1.5, borderRadius: 50, fontSize: '1rem', fontWeight: 'bold' }}
+            >
+              Create Funding Request
+            </Button>
+          </Paper>
+
+          <Typography variant="h5" sx={{ mb: 3, color: '#1b3a2b', fontWeight: 'bold' }}>Active Funding Calls</Typography>
+          
+          {/* 2. Active Funding Cards - Two in a Row, Bigger Size */}
+          <Grid container spacing={4}>
+            {[
+              { name: 'Seed Spark 2026', investor: 'Venture Catalysts', range: '₹15 Lakhs- ₹10 Lakhs', type: 'Equity-Free', icon: 'forest' },
+              { name: 'Agri-Innovation Fund', investor: 'Nabard', range: '₹10 Lakhs - ₹25 Lakhs', type: 'Govt. Backed', icon: 'agriculture' },
+            ].map((item, i) => (
+              <Grid item xs={12} md={6} key={i}>
+                <Card sx={{ 
+                  height: '100%', 
+                  borderRadius: 4, 
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+                  transition: 'all 0.2s',
+                  border: '1px solid #eee',
+                  '&:hover': { transform: 'translateY(-6px)', boxShadow: '0 12px 30px rgba(0,0,0,0.1)' }
+                }}>
+                  <CardContent sx={{ p: 4 }}> {/* Increased Padding for size */}
+                    
+                    {/* Header: Icon + Chip */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', mb: 3 }}>
+                      <Avatar sx={{ bgcolor: '#e8f5e9', color: '#1b3a2b', width: 60, height: 60 }}>
+                        <Icon name={item.icon} style={{ fontSize: 32 }} />
+                      </Avatar>
+                      <Chip label={item.type} size="small" sx={{ bgcolor: '#e0f2f1', color: '#00695c', fontWeight: 'bold' }} />
+                    </Box>
+
+                    {/* Title & Investor */}
+                    <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ fontSize: '1.4rem' }}>{item.name}</Typography>
+                    <Typography variant="body1" color="text.secondary" sx={{ mb: 3, fontSize: '1rem' }}>
+                      Investor: <span style={{ color: '#333', fontWeight: 600 }}>{item.investor}</span>
+                    </Typography>
+
+                    <Divider sx={{ mb: 3 }} />
+
+                    {/* Footer: Amount & Action */}
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Box>
+                        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: 0.5 }}>Funding Range</Typography>
+                        <Typography variant="h5" color="primary.main" fontWeight="800">{item.range}</Typography>
+                      </Box>
+                      <Button 
+                        variant="outlined" 
+                        onClick={() => onViewDetails(item)}
+                        sx={{ 
+                          borderWidth: 2, 
+                          fontWeight: 'bold', 
+                          px: 8, 
+                          py: 2,
+                          '&:hover': { borderWidth: 2 } 
+                        }}
+                      >
+                        View Details
+                      </Button>
+                    </Box>
+
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
+        </Box>
+      );
+
+    const ApplicationsOverview = ({ onChangeView }) => (
+      <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '80vh' }}>
+        <Typography variant="h4" sx={{ mb: 6, fontWeight: 700, color: '#1b3a2b', textAlign: 'center' }}>Applications Dashboard</Typography>
+        <Grid container spacing={4}>
+          <Grid item xs={12} md={4}>
+            <Card onClick={() => onChangeView('My Applications')} sx={{ height: '100%', cursor: 'pointer', borderRadius: 4, transition: 'all 0.3s ease', '&:hover': { transform: 'translateY(-8px)', boxShadow: '0 12px 30px rgba(27, 58, 43, 0.15)' }, position: 'relative', overflow: 'hidden' }}>
+              <Box sx={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', bgcolor: 'rgba(76, 175, 80, 0.1)' }} />
+              <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                <Avatar sx={{ bgcolor: '#e8f5e9', color: '#1b3a2b', width: 70, height: 70, mb: 2, mx: 'auto' }}><Icon name="folder_shared" style={{ fontSize: 36 }} /></Avatar>
+                <Typography variant="h6" fontWeight="bold" gutterBottom>My Applications</Typography>
+                <Chip label="Track Status" size="small" color="primary" sx={{ mb: 2, borderRadius: 1 }} />
+                <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>View real-time updates, edit submissions, and manage your application history efficiently.</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Card onClick={() => onChangeView('Student Grants')} sx={{ height: '100%', cursor: 'pointer', borderRadius: 4, transition: 'all 0.3s ease', '&:hover': { transform: 'translateY(-8px)', boxShadow: '0 12px 30px rgba(76, 175, 80, 0.15)' }, position: 'relative', overflow: 'hidden' }}>
+              <Box sx={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', bgcolor: 'rgba(76, 175, 80, 0.1)' }} />
+              <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                <Avatar sx={{ bgcolor: '#e8f5e9', color: '#2e7d32', width: 70, height: 70, mb: 2, mx: 'auto' }}><Icon name="school" style={{ fontSize: 36 }} /></Avatar>
+                <Typography variant="h6" fontWeight="bold" gutterBottom>Student Grants</Typography>
+                <Chip label="Scholarships & Aid" size="small" color="secondary" sx={{ mb: 2, borderRadius: 1 }} />
+                <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>Explore financial aid opportunities, research scholarships, and merit-based grants for students.</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={12} md={4}>
+            <Card onClick={() => onChangeView('Project Funding')} sx={{ height: '100%', cursor: 'pointer', borderRadius: 4, transition: 'all 0.3s ease', '&:hover': { transform: 'translateY(-8px)', boxShadow: '0 12px 30px rgba(255, 152, 0, 0.15)' }, position: 'relative', overflow: 'hidden' }}>
+              <Box sx={{ position: 'absolute', top: -20, right: -20, width: 100, height: 100, borderRadius: '50%', bgcolor: 'rgba(255, 152, 0, 0.1)' }} />
+              <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                <Avatar sx={{ bgcolor: '#fff3e0', color: '#ef6c00', width: 70, height: 70, mb: 2, mx: 'auto' }}><Icon name="monetization_on" style={{ fontSize: 36 }} /></Avatar>
+                <Typography variant="h6" fontWeight="bold" gutterBottom>Project Funding</Typography>
+                <Chip label="Seed Capital" size="small" sx={{ mb: 2, borderRadius: 1, bgcolor: '#ffcc80', color: '#e65100', fontWeight: 'bold' }} />
+                <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>Pitch your startup ideas to investors and secure early-stage funding to kickstart your venture.</Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </Box>
+    );
+
+    const StatCard = ({ title, value, icon, color, subtext }) => (
+      <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+        <CardContent>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <Box>
+              <Typography color="textSecondary" gutterBottom variant="subtitle2">{title}</Typography>
+              <Typography variant="h4" fontWeight="bold" sx={{ color: '#1b3a2b' }}>{value}</Typography>
+            </Box>
+            <Avatar sx={{ bgcolor: `${color}15`, color: color, width: 48, height: 48 }}><Icon name={icon} /></Avatar>
+          </Box>
+          <Box sx={{ mt: 2 }}><Chip label={subtext} size="small" sx={{ bgcolor: `${color}15`, color: color, fontWeight: 'bold' }} /></Box>
+        </CardContent>
+      </Card>
+    );
+
+    const DashboardHome = () => {
+      const chartData = [{ name: 'Jan', progress: 20 }, { name: 'Feb', progress: 45 }, { name: 'Mar', progress: 30 }, { name: 'Apr', progress: 70 }, { name: 'May', progress: 55 }, { name: 'Jun', progress: 90 },];
+      return (
+        <Box>
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            <Grid item xs={12} sm={4}><StatCard title="Eligible Govt Schemes" value="12" subtext="3 New Added" icon="account_balance" color="#d32f2f" /></Grid>
+            <Grid item xs={12} sm={4}><StatCard title="Active Internships" value="5" subtext="2 Interview Calls" icon="work" color="#ff9800" /></Grid>
+            <Grid item xs={12} sm={4}><StatCard title="Course Certificates" value="8" subtext="Download Available" icon="verified" color="#2e7d32" /></Grid>
+          </Grid>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={8}>
+              <Paper sx={{ p: 3, height: 400 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                  <Typography variant="h6">Learning Progress</Typography>
+                  <Box><Button size="small" variant="contained" sx={{ bgcolor: '#1b3a2b' }}>Year</Button><Button size="small">Month</Button></Box>
+                </Box>
+                <ResponsiveContainer width="100%" height="85%">
+                  <LineChart data={chartData}><CartesianGrid strokeDasharray="3 3" vertical={false} /><XAxis dataKey="name" axisLine={false} tickLine={false} /><YAxis axisLine={false} tickLine={false} /><Tooltip /><Line type="monotone" dataKey="progress" stroke="#4caf50" strokeWidth={3} dot={{ r: 4, fill: '#1b3a2b' }} /></LineChart>
+                </ResponsiveContainer>
+              </Paper>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Paper sx={{ p: 3, height: 400, overflow: 'auto' }}>
+                <Typography variant="h6" sx={{ mb: 2 }}>Recent Activity</Typography>
+                <List>
+                  {[{ title: 'Completed UX Module', date: 'Dec 16', type: 'Course' }, { title: 'Applied for Grant', date: 'Dec 10', type: 'Funding' }, { title: 'Hackathon Reg.', date: 'Dec 03', type: 'Event' }].map((item, index) => (
+                    <React.Fragment key={index}>
+                      <ListItem sx={{ px: 0 }}><ListItemText primary={<Typography variant="subtitle2" fontWeight="bold">{item.title}</Typography>} secondary={`${item.date} • ${item.type}`} /><Icon name="check_circle" color="#4caf50" style={{ fontSize: 16 }} /></ListItem><Divider component="li" />
+                    </React.Fragment>
+                  ))}
+                </List>
+              </Paper>
+            </Grid>
+          </Grid>
+        </Box>
+      );
+    };
+
+    const Sidebar = ({ onNavigate, currentView }) => {
+      const [openState, setOpenState] = React.useState({});
+      const handleToggle = (text) => setOpenState(prev => ({ ...prev, [text]: !prev[text] }));
+      const menuItems = [
+        { text: 'Dashboard', icon: 'dashboard', view: 'Dashboard' },
+        { text: 'Profile', icon: 'person', view: 'Profile' },
+        { text: 'Learning', icon: 'school', subItems: ['My Courses', 'Skill Development', 'Certifications'] },
+        { text: 'Career', icon: 'work', subItems: ['Internships', 'Startup Projects'] },
+        { text: 'Applications', icon: 'assignment', view: 'Applications', subItems: ['My Applications', 'Student Grants', 'Project Funding'] },
+        { text: 'Competitions', icon: 'emoji_events', subItems: ['Hackathons', 'Competitions'] },
+        { text: 'Network', icon: 'groups', subItems: ['Mentorship', 'Student Network'] },
+        { text: 'Resources', icon: 'library_books', subItems: ['Templates Library', 'Toolkits'] },
+        { text: 'Campus Amb.', icon: 'campaign' },
+        { text: 'Settings', icon: 'settings' },
+      ];
+      return (
+        <Drawer variant="permanent" sx={{ width: 260, flexShrink: 0, '& .MuiDrawer-paper': { width: 260, boxSizing: 'border-box', backgroundColor: '#1b3a2b', color: 'white' } }}>
+          <Box sx={{ p: 3, display: 'flex', alignItems: 'center', gap: 2 }}><Typography variant="h6" fontWeight="bold" sx={{ color: '#fff' }}>STUDENT</Typography></Box>
+          <List component="nav">
+            {menuItems.map((item) => (
+              <React.Fragment key={item.text}>
+                <ListItem disablePadding>
+                  <ListItemButton onClick={() => { if (item.subItems) handleToggle(item.text); if (item.view) onNavigate(item.view); }} sx={{ mb: 0.5, bgcolor: currentView === item.view ? 'rgba(255,255,255,0.1)' : 'transparent', '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' } }}>
+                    <ListItemIcon sx={{ minWidth: 40 }}><Icon name={item.icon} color="#b0bec5" /></ListItemIcon>
+                    <ListItemText primary={item.text} />
+                    {item.subItems && (<Icon name={openState[item.text] ? "expand_less" : "expand_more"} color="#b0bec5" />)}
+                  </ListItemButton>
+                </ListItem>
+                {item.subItems && (
+                  <Collapse in={openState[item.text]} timeout="auto" unmountOnExit>
+                    <List component="div" disablePadding>
+                      {item.subItems.map((subItem) => (
+                        <ListItemButton key={subItem} onClick={() => onNavigate(subItem)} sx={{ pl: 9, bgcolor: currentView === subItem ? 'rgba(76, 175, 80, 0.2)' : 'transparent', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)' } }}>
+                          <ListItemText primary={subItem} primaryTypographyProps={{ fontSize: '0.85rem', color: '#cfd8dc' }} />
+                        </ListItemButton>
+                      ))}
+                    </List>
+                  </Collapse>
+                )}
+              </React.Fragment>
+            ))}
+          </List>
+        </Drawer>
+      );
+    };
+
+    const App = () => {
+      const [currentView, setCurrentView] = React.useState('Dashboard');
+      const [selectedItem, setSelectedItem] = React.useState(null);
+      const [isGrantModalOpen, setGrantModalOpen] = React.useState(false);
+      const [selectedGrant, setSelectedGrant] = React.useState(null);
+      const [isFundingModalOpen, setFundingModalOpen] = React.useState(false);
+      const [isProfileModalOpen, setProfileModalOpen] = React.useState(false);
+
+      const handleNavigation = (view) => {
+        if (view === 'Profile') setProfileModalOpen(true);
+        else setCurrentView(view);
+      };
+      const handleViewDetails = (viewName, item) => { setSelectedItem(item); setCurrentView(viewName); };
+      const handleOpenGrantModal = (grant) => { setSelectedGrant(grant); setGrantModalOpen(true); };
+
+      const renderContent = () => {
+        switch (currentView) {
+          case 'Dashboard': return <DashboardHome />;
+          case 'Applications': return <ApplicationsOverview onChangeView={setCurrentView} />;
+          case 'My Applications': return <MyApplicationsView onViewDetails={(item) => handleViewDetails('ApplicationDetail', item)} />;
+          case 'Project Funding': return (<ProjectFundingView onViewDetails={(item) => handleViewDetails('FundingDetail', item)} onCreateRequest={() => setFundingModalOpen(true)} />);
+          case 'Student Grants': return <StudentGrantsView onApply={handleOpenGrantModal} />;
+          case 'ApplicationDetail': return <ApplicationDetailView item={selectedItem} onBack={() => setCurrentView('My Applications')} />;
+          case 'FundingDetail': return <FundingDetailView item={selectedItem} onBack={() => setCurrentView('Project Funding')} />;
+          default: return (<Box sx={{ textAlign: 'center', mt: 10 }}><Typography variant="h4" color="text.secondary">Page Under Construction</Typography></Box>);
+        }
+      };
+
+      return (
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <Box sx={{ display: 'flex' }}>
+            <AppBar position="fixed" sx={{ width: `calc(100% - 260px)`, ml: '260px', bgcolor: '#1b3a2b', justifyContent: 'center', boxShadow: 'none', borderBottom: '1px solid rgba(255,255,255,0.1)', zIndex: (theme) => theme.zIndex.drawer + 1 }}>
+              <Toolbar sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                <Typography variant="h6" noWrap component="div" sx={{ fontWeight: 600, fontSize: '1.1rem' }}>{currentView}</Typography>
+                <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                  <IconButton sx={{ color: 'white' }}><Icon name="notifications" /></IconButton>
+                  <Box sx={{ textAlign: 'right', display: { xs: 'none', sm: 'block' } }}>
+                    <Typography variant="subtitle2" sx={{ fontWeight: 'bold', fontSize: '0.85rem' }}>Welcome, Student!</Typography>
+                    <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.7rem' }}>ID: 2026-STU</Typography>
+                  </Box>
+                  <Avatar sx={{ bgcolor: '#4caf50', color: 'white', width: 32, height: 32, fontSize: '0.9rem' }}>S</Avatar>
+                </Box>
+              </Toolbar>
+            </AppBar>
+            <Sidebar onNavigate={handleNavigation} currentView={currentView} />
+
+            <Box component="main" sx={{ flexGrow: 1, p: 3, width: { sm: `calc(100% - 260px)` }, minHeight: '100vh', pt: '120px' }}>
+              {renderContent()}
+            </Box>
+
+            <GrantApplicationDialog open={isGrantModalOpen} grant={selectedGrant} onClose={() => setGrantModalOpen(false)} />
+            <FundingRequestDialog open={isFundingModalOpen} onClose={() => setFundingModalOpen(false)} />
+            <StudentRegistrationForm open={isProfileModalOpen} onClose={() => setProfileModalOpen(false)} />
+          </Box>
+        </ThemeProvider>
+      );
+    };
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+
+</html>
